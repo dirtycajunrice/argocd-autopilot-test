@@ -1,0 +1,66 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  annotations:
+    argocd-autopilot.argoproj-labs.io/default-dest-server: https://kubernetes.default.svc
+    argocd.argoproj.io/sync-options: PruneLast=true
+  creationTimestamp: null
+  name: testproject
+  namespace: argocd
+spec:
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  description: testproject project
+  destinations:
+  - namespace: '*'
+    server: '*'
+  namespaceResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  sourceRepos:
+  - '*'
+status: {}
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  creationTimestamp: null
+  name: testproject
+  namespace: argocd
+spec:
+  generators:
+  - git:
+      files:
+      - path: kustomize/**/overlays/testproject/config.json
+      repoURL: https://github.com/dirtycajunrice1/gitops
+      requeueAfterSeconds: 20
+      revision: ""
+      template:
+        metadata: {}
+        spec:
+          destination: {}
+          project: ""
+          source:
+            repoURL: ""
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/managed-by: argo-autopilot
+        app.kubernetes.io/name: '{{appName}}'
+      name: testproject-{{userGivenName}}
+      namespace: argocd
+    spec:
+      destination:
+        namespace: '{{destNamespace}}'
+        server: '{{destServer}}'
+      project: testproject
+      source:
+        path: kustomize/{{appName}}/overlays/testproject
+        repoURL: https://github.com/dirtycajunrice1/gitops
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+status: {}
